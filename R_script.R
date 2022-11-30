@@ -29,9 +29,9 @@ nomenclature = read.csv("OFB_total_2007a2020_taxons_cites_retenus_test.csv", sep
 releves = read.csv("se_ofb_pa.csv", encoding = "latin1", sep = ";", dec = ",")
 stations_suppr = read.csv("Tab_suivi_CSE_2016_2020_majfin_20210318.csv")
 dates_correction = read.table("releves_double_dateOK.txt", sep = "\t", header = T)
-variables_09_simp = read.csv("Tab_infoeco_CSE_2009_2013_majOKsaufSol_20210318.csv", sep = ";")
-variables_16_simp = read.csv("Tab_infoeco_CSE_2016_2020_maj_20210318.csv", sep = ";")
-baseflor = read.csv2("Liste_Bourgogne_v20201203_Taxref12.csv", sep = ";", skip = 1)
+variables_09_simp = read.csv("Tab_infoeco_CSE_2009_2013_majOKsaufSol_20210318.csv", sep = ";", fileEncoding="latin1")
+variables_16_simp = read.csv("Tab_infoeco_CSE_2016_2020_maj_20210318.csv", sep = ";", fileEncoding="latin1")
+baseflor = read.csv2("Liste_Bourgogne_v20201203_Taxref12.csv", sep = ";", skip = 1, fileEncoding="latin1")
 baseflor_correction = read.csv("indices_inconnus(Recuperation automatique).csv", sep = ";", dec =",")
 listsp_prot = read.csv("liste espece protegee.csv", sep = ";")
 
@@ -225,6 +225,23 @@ infos_stations$mois = strftime(infos_stations$newdate, "%m")
 ## Protection status
 nom_prot = colnames(listsp_prot[, 2:12])
 listsp_prot[nom_prot] = lapply(listsp_prot[nom_prot], factor)
+
+##Taxonomic groups gathering list
+list_sp_tot = releves_flore %>% 
+  select(especes_ok, especes_non_ok) %>% 
+  distinct(especes_non_ok, .keep_all = T) 
+
+list_sp_tot$especes_ok = as.character(list_sp_tot$especes_ok)
+list_sp_tot$especes_non_ok = as.character(list_sp_tot$especes_non_ok)
+
+list_sp_tax = list_sp_tot %>% 
+  mutate(keep = case_when(especes_non_ok != especes_ok ~ 1, TRUE ~ 0)) %>% 
+  filter(keep == 1) %>% 
+  mutate(keep_gr =  stringr::str_split(especes_ok, " ", n= 3)) %>% 
+  filter(especes_ok != "Taraxacum F.H.Wigg.") %>% 
+  mutate(keep_gr = map_chr(keep_gr, 3)) %>% 
+  filter(keep_gr == "Gr.") %>% 
+  select(especes_non_ok, especes_ok)
 
 ##############################################################################################################
 ## Species presence probability over time trends --------------------------------------------------
